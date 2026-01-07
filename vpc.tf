@@ -43,6 +43,7 @@ resource "aws_internet_gateway" "this" {
   tags = {
     Name = "${var.cluster_name}-igw"
   }
+  depends_on = [aws_vpc.this]
 }
 
 resource "aws_route_table" "this" {

@@ -62,8 +62,14 @@ resource "kubernetes_manifest" "karpenter_ec2nodeclass_arm64" {
     }
   }
 
-  #depends_on = [helm_release.karpenter, kubernetes_service_account.karpenter, kubernetes_manifest.karpenter_crd_ec2nodeclasses]
-  depends_on = [helm_release.karpenter, kubernetes_service_account.karpenter]
+  depends_on = [
+    helm_release.karpenter,
+    kubernetes_service_account.karpenter,
+    aws_security_group.karpenter,
+    aws_subnet.this,
+    aws_subnet.secondary,
+    aws_eks_node_group.this,
+  ]
 
 }
 
@@ -89,8 +95,14 @@ resource "kubernetes_manifest" "karpenter_ec2nodeclass_amd64" {
     }
   }
 
-  #   depends_on = [helm_release.karpenter, kubernetes_service_account.karpenter, kubernetes_manifest.karpenter_crd_ec2nodeclasses]
-  depends_on = [helm_release.karpenter, kubernetes_service_account.karpenter]
+  depends_on = [
+    helm_release.karpenter,
+    kubernetes_service_account.karpenter,
+    aws_security_group.karpenter,
+    aws_subnet.this,
+    aws_subnet.secondary,
+    aws_eks_node_group.this,
+  ]
 }
 
 resource "kubernetes_manifest" "karpenter_nodepool_arm64" {
@@ -122,7 +134,12 @@ resource "kubernetes_manifest" "karpenter_nodepool_arm64" {
     }
   }
 
-  # depends_on = [kubernetes_manifest.karpenter_ec2nodeclass_arm64, kubernetes_manifest.karpenter_crd_nodepools]
+  depends_on = [
+    helm_release.karpenter,
+    kubernetes_service_account.karpenter,
+    kubernetes_manifest.karpenter_ec2nodeclass_arm64,
+    aws_eks_node_group.this,
+  ]
 }
 
 
@@ -155,7 +172,12 @@ resource "kubernetes_manifest" "karpenter_nodepool_amd64" {
     }
   }
 
-  # depends_on = [kubernetes_manifest.karpenter_ec2nodeclass_amd64, kubernetes_manifest.karpenter_crd_nodepools]
+  depends_on = [
+    helm_release.karpenter,
+    kubernetes_service_account.karpenter,
+    kubernetes_manifest.karpenter_ec2nodeclass_amd64,
+    aws_eks_node_group.this,
+  ]
 }
 
 # resource "kubernetes_manifest" "karpenter_crd_nodepools" {

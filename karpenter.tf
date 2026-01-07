@@ -112,7 +112,10 @@ resource "helm_release" "karpenter" {
     }
   })]
 
-  depends_on = [kubernetes_service_account.karpenter]
+  depends_on = [
+    kubernetes_service_account.karpenter,
+    aws_sqs_queue.karpenter_interruption,
+  ]
 }
 
 resource "aws_sqs_queue" "karpenter_interruption" {

@@ -18,5 +18,8 @@ kubectl get svc arm64-hello-svc -o wide
 
 ## Destroy
 ```sh
+kubectl delete pod arm64-hello
+kubectl delete svc arm64-hello-svc
+kubectl delete nginx-html
 terraform destroy
 ```
