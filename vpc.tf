@@ -15,7 +15,8 @@ resource "aws_subnet" "this" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "${var.cluster_name}-subnet"
+    Name                     = "${var.cluster_name}-subnet"
+    "karpenter.sh/discovery" = var.cluster_name
   }
 }
 
@@ -26,7 +27,8 @@ resource "aws_subnet" "secondary" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "${var.cluster_name}-subnet-secondary"
+    Name                     = "${var.cluster_name}-subnet-secondary"
+    "karpenter.sh/discovery" = var.cluster_name
   }
 }
 

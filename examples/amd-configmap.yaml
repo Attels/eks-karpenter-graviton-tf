@@ -1,0 +1,129 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-html
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>🚀 Hello OpsFleet!</title>
+      <style>
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        
+        body {
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          animation: gradientShift 8s ease infinite;
+          background-size: 200% 200%;
+        }
+        
+        @keyframes gradientShift {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        
+        .container {
+          text-align: center;
+          background: rgba(255, 255, 255, 0.95);
+          padding: 60px 40px;
+          border-radius: 20px;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+          max-width: 600px;
+          animation: slideIn 0.8s ease-out;
+        }
+        
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateY(-30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        h1 {
+          font-size: 3.5rem;
+          color: #667eea;
+          margin-bottom: 20px;
+          animation: bounce 2s ease-in-out infinite;
+        }
+        
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-20px); }
+        }
+        
+        .gif-container {
+          margin: 40px 0;
+        }
+        
+        .gif-container img {
+          max-width: 300px;
+          border-radius: 15px;
+          box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+        
+        p {
+          font-size: 1.3rem;
+          color: #333;
+          margin: 20px 0;
+          line-height: 1.6;
+        }
+        
+        .badge {
+          display: inline-block;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          padding: 12px 24px;
+          border-radius: 50px;
+          font-weight: bold;
+          margin-top: 20px;
+          box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+          animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+        }
+        
+        .emoji {
+          font-size: 2rem;
+          display: inline-block;
+          margin: 0 5px;
+          animation: wiggle 1s ease-in-out infinite;
+        }
+        
+        @keyframes wiggle {
+          0%, 100% { transform: rotate(0deg); }
+          25% { transform: rotate(-5deg); }
+          75% { transform: rotate(5deg); }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>🚀 Hello OpsFleet! 🎉</h1>
+        <div class="gif-container">
+          <img src="https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExaHN1bmV3cDZmNDZxcG4yc3F5YXN1Mmc0Nzl4OHFnZzRlNGdzM291eCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/RP0C2pxOil7dYuzgyi/giphy.gif" alt="Rocket GIF">
+        </div>
+        <p>Welcome to <strong>Karpenter</strong> on AWS EKS! 🌟</p>
+        <p>This pod is running on a <span class="emoji">⚡</span> dynamically provisioned node</p>
+        <div class="badge">✨ Powered by Karpenter ✨</div>
+      </div>
+    </body>
+    </html>

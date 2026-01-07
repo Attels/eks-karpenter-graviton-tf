@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: amd64-hello
+  labels:
+    pod-name: amd64-hello
+spec:
+  containers:
+    - name: hello
+      image: nginx:stable
+      ports:
+        - containerPort: 80
+      volumeMounts:
+        - name: html
+          mountPath: /usr/share/nginx/html
+      resources:
+        requests:
+          cpu: "100m"
+          memory: "64Mi"
+  volumes:
+    - name: html
+      configMap:
+        name: nginx-html
+  nodeSelector:
+    kubernetes.io/arch: amd64
+  restartPolicy: Never
