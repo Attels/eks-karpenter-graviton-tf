@@ -152,3 +152,9 @@ resource "aws_iam_role_policy" "karpenter_policy" {
     ]
   })
 }
+
+# Create EC2 Spot service-linked role (required for Spot instances)
+resource "aws_iam_service_linked_role" "spot" {
+  aws_service_name = "spot.amazonaws.com"
+  description      = "Service-linked role for EC2 Spot Instances"
+}

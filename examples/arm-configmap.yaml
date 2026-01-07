@@ -121,9 +121,9 @@ data:
         <div class="gif-container">
           <img src="https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExaHN1bmV3cDZmNDZxcG4yc3F5YXN1Mmc0Nzl4OHFnZzRlNGdzM291eCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/RP0C2pxOil7dYuzgyi/giphy.gif" alt="Rocket GIF">
         </div>
-        <p>Welcome to <strong>Karpenter</strong> on AWS EKS! 🌟</p>
-        <p>This pod is running on a <span class="emoji">⚡</span> dynamically provisioned node</p>
-        <div class="badge">✨ Powered by Karpenter ✨</div>
+        <p>Welcome to <strong>Karpenter</strong> on AWS EKS deployed by Artem Fedotov! 🌟</p>
+        <p>This pod is running on a spot node <span class="emoji">⚡</span> dynamically provisioned</p>
+        <div class="badge">✨ by Karpenter ✨</div>
       </div>
     </body>
     </html>

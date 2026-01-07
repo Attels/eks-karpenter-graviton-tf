@@ -105,10 +105,10 @@ resource "kubernetes_manifest" "karpenter_nodepool_arm64" {
         spec = {
           requirements = [
             { key = "kubernetes.io/arch", operator = "In", values = ["arm64"] },
-            { key = "karpenter.k8s.aws/instance-category", operator = "In", values = ["m"] },
-            { key = "karpenter.k8s.aws/instance-size", operator = "NotIn", values = ["nano"] },
+            { key = "karpenter.k8s.aws/instance-family", operator = "In", values = ["c6g", "c7g", "m6g", "m7g", "r6g", "r7g"] },
+            { key = "karpenter.k8s.aws/instance-size", operator = "In", values = ["medium"] },
             { key = "kubernetes.io/os", operator = "In", values = ["linux"] },
-            { key = "karpenter.sh/capacity-type", operator = "In", values = ["on-demand"] }
+            { key = "karpenter.sh/capacity-type", operator = "In", values = ["spot"] }
           ]
           nodeClassRef = { group = "karpenter.k8s.aws", kind = "EC2NodeClass", name = "karpenter-nodeclass-arm64" }
           expireAfter  = "720h"
@@ -138,9 +138,10 @@ resource "kubernetes_manifest" "karpenter_nodepool_amd64" {
         spec = {
           requirements = [
             { key = "kubernetes.io/arch", operator = "In", values = ["amd64"] },
-            { key = "karpenter.k8s.aws/instance-size", operator = "NotIn", values = ["nano"] },
+            { key = "karpenter.k8s.aws/instance-family", operator = "In", values = ["c5", "c6a", "c6i", "m5", "m6a", "m6i", "r5", "r6a", "r6i"] },
+            { key = "karpenter.k8s.aws/instance-size", operator = "In", values = ["medium"] },
             { key = "kubernetes.io/os", operator = "In", values = ["linux"] },
-            { key = "karpenter.sh/capacity-type", operator = "In", values = ["on-demand"] }
+            { key = "karpenter.sh/capacity-type", operator = "In", values = ["spot"] }
           ]
           nodeClassRef = { group = "karpenter.k8s.aws", kind = "EC2NodeClass", name = "karpenter-nodeclass-amd64" }
           expireAfter  = "720h"

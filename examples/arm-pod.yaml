@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: amd64-hello
+  name: arm64-hello
   labels:
-    pod-name: amd64-hello
+    pod-name: arm64-hello
 spec:
   containers:
     - name: hello
@@ -22,5 +22,6 @@ spec:
       configMap:
         name: nginx-html
   nodeSelector:
-    kubernetes.io/arch: amd64
+    kubernetes.io/arch: arm64
+    karpenter.sh/nodepool: karpenter-nodepool-arm64
   restartPolicy: Never
