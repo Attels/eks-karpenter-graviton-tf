@@ -1,14 +1,49 @@
+terraform {
+  required_version = ">= 1.14.3"
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.28"
+    }
+  }
+}
+
+data "aws_eks_cluster" "this" {
+  name = var.cluster_name
+}
+
+data "aws_eks_cluster_auth" "this" {
+  name = var.cluster_name
+}
+
+# Fetch VPC and node IAM role
+data "aws_vpc" "this" {
+  tags = {
+    Name = "${var.cluster_name}-vpc"
+  }
+}
+
+data "aws_iam_role" "node_group" {
+  name = "${var.cluster_name}-node-role"
+}
+
+# Security Group for Karpenter nodes
 resource "aws_security_group" "karpenter" {
   name        = "${var.cluster_name}-karpenter-sg"
   description = "Security group assigned to nodes launched by Karpenter"
-  vpc_id      = aws_vpc.this.id
+  vpc_id      = data.aws_vpc.this.id
 
   ingress {
     description     = "Allow EKS control plane to reach kubelet"
     from_port       = 10250
     to_port         = 10250
     protocol        = "tcp"
-    security_groups = [aws_eks_cluster.this.vpc_config[0].cluster_security_group_id]
+    security_groups = [data.aws_eks_cluster.this.vpc_config[0].cluster_security_group_id]
   }
 
   ingress {
@@ -16,7 +51,7 @@ resource "aws_security_group" "karpenter" {
     from_port       = 443
     to_port         = 443
     protocol        = "tcp"
-    security_groups = [aws_eks_cluster.this.vpc_config[0].cluster_security_group_id]
+    security_groups = [data.aws_eks_cluster.this.vpc_config[0].cluster_security_group_id]
   }
 
   ingress {
@@ -40,6 +75,17 @@ resource "aws_security_group" "karpenter" {
   }
 }
 
+# Ensure the EKS Cluster Security Group is also discoverable by Karpenter
+# so that Karpenter-launched nodes attach BOTH the cluster SG and the
+# dedicated Karpenter node SG. This matches AWS/Karpenter best practices
+# and avoids subtle control-plane connectivity issues.
+resource "aws_ec2_tag" "eks_cluster_sg_discovery" {
+  resource_id = data.aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
+  key         = "karpenter.sh/discovery"
+  value       = var.cluster_name
+}
+
+# EC2NodeClass for ARM64
 resource "kubernetes_manifest" "karpenter_ec2nodeclass_arm64" {
   manifest = {
     apiVersion = "karpenter.k8s.aws/v1"
@@ -49,7 +95,7 @@ resource "kubernetes_manifest" "karpenter_ec2nodeclass_arm64" {
     }
     spec = {
       amiFamily = "AL2023"
-      role      = aws_iam_role.node_group.name
+      role      = data.aws_iam_role.node_group.name
       amiSelectorTerms = [
         { id = "ami-00171c2155dff951e" }
       ]
@@ -63,16 +109,11 @@ resource "kubernetes_manifest" "karpenter_ec2nodeclass_arm64" {
   }
 
   depends_on = [
-    helm_release.karpenter,
-    kubernetes_service_account.karpenter,
     aws_security_group.karpenter,
-    aws_subnet.this,
-    aws_subnet.secondary,
-    aws_eks_node_group.this,
   ]
-
 }
 
+# EC2NodeClass for AMD64
 resource "kubernetes_manifest" "karpenter_ec2nodeclass_amd64" {
   manifest = {
     apiVersion = "karpenter.k8s.aws/v1"
@@ -82,7 +123,7 @@ resource "kubernetes_manifest" "karpenter_ec2nodeclass_amd64" {
     }
     spec = {
       amiFamily = "AL2023"
-      role      = aws_iam_role.node_group.name
+      role      = data.aws_iam_role.node_group.name
       amiSelectorTerms = [
         { id = "ami-0713c16843cd14f6b" }
       ]
@@ -96,15 +137,11 @@ resource "kubernetes_manifest" "karpenter_ec2nodeclass_amd64" {
   }
 
   depends_on = [
-    helm_release.karpenter,
-    kubernetes_service_account.karpenter,
     aws_security_group.karpenter,
-    aws_subnet.this,
-    aws_subnet.secondary,
-    aws_eks_node_group.this,
   ]
 }
 
+# NodePool for ARM64
 resource "kubernetes_manifest" "karpenter_nodepool_arm64" {
   manifest = {
     apiVersion = "karpenter.sh/v1"
@@ -135,14 +172,11 @@ resource "kubernetes_manifest" "karpenter_nodepool_arm64" {
   }
 
   depends_on = [
-    helm_release.karpenter,
-    kubernetes_service_account.karpenter,
-    kubernetes_manifest.karpenter_ec2nodeclass_arm64,
-    aws_eks_node_group.this,
+    kubernetes_manifest.karpenter_ec2nodeclass_arm64
   ]
 }
 
-
+# NodePool for AMD64
 resource "kubernetes_manifest" "karpenter_nodepool_amd64" {
   manifest = {
     apiVersion = "karpenter.sh/v1"
@@ -155,8 +189,8 @@ resource "kubernetes_manifest" "karpenter_nodepool_amd64" {
         spec = {
           requirements = [
             { key = "kubernetes.io/arch", operator = "In", values = ["amd64"] },
-            { key = "karpenter.k8s.aws/instance-family", operator = "In", values = ["c5", "c6a", "c6i", "m5", "m6a", "m6i", "r5", "r6a", "r6i"] },
-            { key = "karpenter.k8s.aws/instance-size", operator = "In", values = ["medium"] },
+            # { key = "karpenter.k8s.aws/instance-family", operator = "In", values = ["c5", "c6a", "c6i", "m5", "m6a", "m6i", "r5", "r6a", "r6i"] },
+            { key = "karpenter.k8s.aws/instance-size", operator = "In", values = ["medium", "large"] },
             { key = "kubernetes.io/os", operator = "In", values = ["linux"] },
             { key = "karpenter.sh/capacity-type", operator = "In", values = ["spot"] }
           ]
@@ -173,61 +207,6 @@ resource "kubernetes_manifest" "karpenter_nodepool_amd64" {
   }
 
   depends_on = [
-    helm_release.karpenter,
-    kubernetes_service_account.karpenter,
     kubernetes_manifest.karpenter_ec2nodeclass_amd64,
-    aws_eks_node_group.this,
   ]
 }
-
-# resource "kubernetes_manifest" "karpenter_crd_nodepools" {
-#   manifest = {
-#     apiVersion = "apiextensions.k8s.io/v1"
-#     kind       = "CustomResourceDefinition"
-#     metadata = {
-#       name = "nodepools.karpenter.sh"
-#     }
-#     spec = {
-#       group = "karpenter.sh"
-#       names = {
-#         plural   = "nodepools"
-#         singular = "nodepool"
-#         kind     = "NodePool"
-#       }
-#       scope = "Cluster"
-#       versions = [
-#         {
-#           name    = "v1"
-#           served  = true
-#           storage = true
-#         }
-#       ]
-#     }
-#   }
-# }
-
-# resource "kubernetes_manifest" "karpenter_crd_ec2nodeclasses" {
-#   manifest = {
-#     apiVersion = "apiextensions.k8s.io/v1"
-#     kind       = "CustomResourceDefinition"
-#     metadata = {
-#       name = "ec2nodeclasses.karpenter.k8s.aws"
-#     }
-#     spec = {
-#       group = "karpenter.k8s.aws"
-#       names = {
-#         plural   = "ec2nodeclasses"
-#         singular = "ec2nodeclass"
-#         kind     = "EC2NodeClass"
-#       }
-#       scope = "Cluster"
-#       versions = [
-#         {
-#           name    = "v1"
-#           served  = true
-#           storage = true
-#         }
-#       ]
-#     }
-#   }
-# }

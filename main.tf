@@ -1,23 +1,5 @@
-variable "region" {
-  description = "AWS region"
-  type        = string
-  default     = "us-east-1"
-}
-
-variable "cluster_name" {
-  description = "EKS cluster name"
-  type        = string
-  default     = "minimal-eks"
-}
-
-variable "karpenter_chart_version" {
-  description = "(Optional) Karpenter Helm chart version. Leave blank to use chart's latest."
-  type        = string
-  default     = "1.7.4"
-}
-
 terraform {
-  required_version = ">= 1.5.0"
+  required_version = ">= 1.14.3"
 
   required_providers {
     aws = {
@@ -35,16 +17,74 @@ terraform {
   }
 }
 
-terraform {
-  backend "local" {}
-}
-
 provider "aws" {
   region = var.region
 }
 
-data "aws_availability_zones" "available" {}
+# Module 1: Infrastructure (VPC, EKS, IAM, Node Groups)
+module "infra" {
+  source = "./modules/infra"
+
+  region       = var.region
+  cluster_name = var.cluster_name
+
+  providers = {
+    aws = aws
+  }
+}
+
+# Configure providers for Kubernetes and Helm after cluster is created
+data "aws_eks_cluster" "this" {
+  name       = module.infra.cluster_name
+  depends_on = [module.infra]
+}
 
 data "aws_eks_cluster_auth" "this" {
-  name = aws_eks_cluster.this.name
+  name       = module.infra.cluster_name
+  depends_on = [module.infra]
+}
+
+provider "helm" {
+  kubernetes {
+    config_path = "~/.kube/config"
+  }
+}
+
+provider "kubernetes" {
+  config_path = "~/.kube/config"
+}
+
+# Module 2: Karpenter Helm Chart
+module "karpenter" {
+  source = "./modules/karpenter"
+
+  region           = var.region
+  cluster_name     = module.infra.cluster_name
+  cluster_endpoint = module.infra.cluster_endpoint
+  chart_version    = var.karpenter_chart_version
+
+  providers = {
+    aws        = aws
+    helm       = helm
+    kubernetes = kubernetes
+  }
+
+  depends_on = [module.infra]
+}
+
+# Module 3: Karpenter Provisioners & Resources
+module "karpenter_resources" {
+  source = "./modules/karpenter_resources"
+
+  region           = var.region
+  cluster_name     = module.infra.cluster_name
+  cluster_endpoint = module.infra.cluster_endpoint
+  service_account  = module.karpenter.service_account
+
+  providers = {
+    aws        = aws
+    kubernetes = kubernetes
+  }
+
+  depends_on = [module.karpenter]
 }
